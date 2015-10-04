@@ -44,7 +44,11 @@ object Tasks {
 
 
   lazy val rioHost = Def.task {
-    s"roboRIO-${Keys.teamNumber.value}.local"
+    if (Keys.staticIP.value) {
+      s"10.${Keys.teamNumber.value.toString.dropRight(2)}.${Keys.teamNumber.value.toString.takeRight(2)}.2"
+    } else {
+      s"roboRIO-${Keys.teamNumber.value}.local"
+    }
   }
 
   lazy val hostConfig = Def.task {

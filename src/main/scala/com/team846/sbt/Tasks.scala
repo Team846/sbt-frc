@@ -6,48 +6,14 @@ import sbt.Keys._
 import sbtassembly.AssemblyKeys
 
 object Tasks {
-  val eclipseURLBase = "http://first.wpi.edu/FRC/roborio/release/eclipse"
-  val wpiVersion = "java_0.1.0.201501221609"
   val remoteUser = "lvuser"
   val remoteJAR = "/home/lvuser/FRCUserProgram.jar"
-
-  lazy val downloadWPILib = Def.task[(sbt.Keys.Classpath, sbt.Keys.Classpath)] {
-    if (!(target.value / "frc-downloads" / "wpiJava" / "lib" / "WPILib.jar").exists()) {
-      val logger = streams.value.log
-
-      val downloadFolder = target.value / "frc-downloads"
-      downloadFolder.mkdir()
-
-      val contentJARPath = s"$eclipseURLBase/plugins/edu.wpi.first.wpilib.plugins.$wpiVersion.jar"
-
-      logger.info(s"Downloading Eclipse plugin jar from $contentJARPath and unzipping")
-
-      val contentJARTarget = downloadFolder / "content"
-      contentJARTarget.mkdir()
-      IO.unzipURL(new URL(contentJARPath), contentJARTarget)
-
-      logger.success(s"Downloaded Eclipse plugin jar and unzipped")
-
-      logger.info("Extracting WPILib libraries from plugin jar")
-
-      val javaJARTarget = downloadFolder / "wpiJava"
-      IO.unzip(contentJARTarget / "resources" / "java.zip", javaJARTarget)
-
-      logger.info("Extracted WPILib libraries from plugin jar")
-
-      ((javaJARTarget / "lib" ** "*.jar").classpath, (javaJARTarget / "sim/lib" ** "*.jar").classpath)
-    } else {
-      ((target.value / "frc-downloads" / "wpiJava" / "lib" ** "*.jar").classpath, (target.value / "frc-downloads" / "wpiJava" / "sim/lib" ** "*.jar").classpath)
-    }
-  }
-
-
 
   lazy val rioHost = Def.task {
     if (Keys.staticIP.value) {
       s"10.${Keys.teamNumber.value.toString.dropRight(2)}.${Keys.teamNumber.value.toString.takeRight(2)}.2"
     } else {
-      s"roboRIO-${Keys.teamNumber.value}.local"
+      s"roboRIO-${Keys.teamNumber.value}-FRC.local"
     }
   }
 

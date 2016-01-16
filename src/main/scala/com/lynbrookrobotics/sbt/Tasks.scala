@@ -1,4 +1,4 @@
-package com.team846.sbt
+package com.lynbrookrobotics.sbt
 
 import com.decodified.scalassh._
 import sbt._

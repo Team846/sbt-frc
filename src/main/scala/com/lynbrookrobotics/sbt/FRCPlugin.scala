@@ -1,4 +1,4 @@
-package com.team846.sbt
+package com.lynbrookrobotics.sbt
 
 import sbt.Package.ManifestAttributes
 import sbt._

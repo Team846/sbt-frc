@@ -36,8 +36,9 @@ object FRCPlugin extends AutoPlugin {
     Keys.staticIP := false,
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.rename
-      case x =>
-        MergeStrategy.first
+      case PathList("reference.conf") =>
+        MergeStrategy.concat
+      case _ => MergeStrategy.first
     },
     sbt.Keys.mainClass in assembly := Some("edu.wpi.first.wpilibj.RobotBase"),
     sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++ Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value)))

@@ -10,7 +10,7 @@ Build your First Robotics Competition robot code with [SBT](http://www.scala-sbt
   + Atom (https://github.com/ensime/ensime-atom)
   + Sublime Text (https://github.com/ensime/ensime-sublime)
   + Vim (https://github.com/ensime/ensime-vim)!
-  + The above text editors don't just do syntax highlighting, but also give code completion with ENSIME (https://github.com/ensime/ensime-sublime)
+  + The above text editors don't just do syntax highlighting, but also give code completion with ENSIME (http://ensime.github.io/)
 + Extensible! There are [lots](https://github.com/sbt) of SBT plugins for all sorts of tasks such as style checking, unit testing, and building websites
 
 ## Installation

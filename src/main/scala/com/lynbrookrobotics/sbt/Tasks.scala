@@ -37,9 +37,14 @@ object Tasks {
     logger.info(s"Deploying $assembledFile to $remoteUser@$host:$remoteJAR")
 
     SSH(host, hostConfig.value) { client =>
-      logger.success("Connected to roboRIO")
-      client.upload(assembledFile.absolutePath, remoteJAR).right.get
-      logger.success("Copied JAR to roboRIO")
+      client.authenticatedClient.right.toOption match {
+        case Some(_) =>
+          logger.success("Connected to roboRIO")
+          client.upload(assembledFile.absolutePath, remoteJAR).right.get
+          logger.success("Copied JAR to roboRIO")
+        case None =>
+          logger.error("Could not connect to roboRIO")
+      }
     }
   }
 
@@ -50,10 +55,15 @@ object Tasks {
     logger.info("Attempting to restart robot code")
 
     SSH(host, hostConfig.value) { client =>
-      logger.success("Connected to roboRIO")
-      client.exec("killall netconsole-host").right.get
-      client.exec(". /etc/profile.d/natinst-path.sh; /usr/local/frc/bin/frcKillRobot.sh -t -r").right.get
-      logger.info("Restarted robot code")
+      client.authenticatedClient.right.toOption match {
+        case Some(_) =>
+          logger.success("Connected to roboRIO")
+          client.exec("killall netconsole-host").right.get
+          client.exec(". /etc/profile.d/natinst-path.sh; /usr/local/frc/bin/frcKillRobot.sh -t -r").right.get
+          logger.info("Restarted robot code")
+        case None =>
+          logger.error("Could not connect to roboRIO")
+      }
     }
   }
 }

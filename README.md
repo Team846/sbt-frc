@@ -47,7 +47,7 @@ libraryDependencies += "edu.wpi.first" % "networktables" % "YOUR VERSION HERE"
 This adds a resolver on our [mirror of WPILib](https://github.com/Team846/wpilib-maven) and adds dependencies on both WPILib and NetworkTables. To get the latest version of WPILib, take a look at http://team846.github.io/wpilib-maven/ and grab the latest release version.
 
 ## Robot Main Class
-The SBT plugin will attempt to detect the main robot class, but if it cannot you can set the robot class by putting `robotClass := "your class here"` in your `build.sbt`.
+The SBT plugin will attempt to detect the main robot class, but if it cannot, you can set the robot class by putting `robotClass := "your class here"` in your `build.sbt`.
 
 ## Disabling the Scala Standard Library
-If your robot code is Java-only, you can choose to disable automatically adding a dependency on the Scala Standard Library by putting `autoScalaLibrary := false` in your `build.sbt`.
+If your robot code is Java-only, you can choose to disable automatic adding of a dependency on the Scala Standard Library by putting `autoScalaLibrary := false` in your `build.sbt`.

@@ -1,5 +1,5 @@
 # sbt-frc
-Build your First Robotics Competition robot code with [SBT](http://www.scala-sbt.org/)!
+Build your FIRST Robotics Competition robot code with [SBT](http://www.scala-sbt.org/)!
 
 ## Features
 + Dependency Management! Use Maven/Ivy repositories to grab dependencies from across the internet!

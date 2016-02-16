@@ -4,7 +4,7 @@ organization := "com.lynbrookrobotics"
 
 name := "sbt-frc"
 
-version := "0.3.0"
+version := "0.3.1-SNAPSHOT"
 
 scalaVersion := "2.10.4"
 

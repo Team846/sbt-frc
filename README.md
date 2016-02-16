@@ -1,4 +1,6 @@
 # sbt-frc
+[![Build Status](https://travis-ci.org/Team846/sbt-frc.svg?branch=master)](https://travis-ci.org/Team846/sbt-frc)
+
 Build, package, and deploy your FIRST Robotics Competition robot code with [SBT](http://www.scala-sbt.org/)!
 
 ## Features

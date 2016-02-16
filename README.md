@@ -36,6 +36,9 @@ enablePlugins(FRCPlugin)
 teamNumber := #
 ```
 
+## Deploying
+To deploy code to the robot, run `sbt deploy` while connected to your robot's radio. This will package your code, connect to the robot, copy over the code, and launch it.
+
 ## Adding WPILib and NetworkTables
 To add dependencies on WPILib and NetworkTables, add to your `build.sbt`:
 ```scala

@@ -5,7 +5,11 @@ import sbt._
 import sbt.Keys._
 import sbtassembly.AssemblyKeys
 
-import scala.util.{Success, Failure, Try}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.util.{Failure, Success, Try}
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Tasks {
   val remoteUser = "lvuser"
@@ -23,8 +27,9 @@ object Tasks {
   }
 
   def attemptConnection(config: HostConfig, logger: Logger): Try[SshClient] = {
-    SshClient(config.hostName).right.toOption match {
-      case Some(client) =>
+    logger.info(s"Attempting to connect to roboRIO @ ${config.hostName}")
+    SshClient(config.hostName, config) match {
+      case Right(client) =>
         client.authenticatedClient.right.toOption match {
           case Some(_) =>
             logger.success(s"Connected to roboRIO @ ${config.hostName}")
@@ -34,12 +39,14 @@ object Tasks {
             client.close()
             Failure(new Exception("Could not connect to roboRIO"))
         }
-      case None =>
+
+      case Left(e) =>
+        logger.error(e)
         Failure(new Exception("Could not connect to roboRIO"))
     }
   }
 
-  def firstWorkingConnection(hosts: List[String], logger: Logger): Try[SshClient] = {
+  def firstWorkingConnection(hosts: List[String], logger: Logger): Future[SshClient] = {
     hosts match {
       case head :: tail =>
         val config = HostConfig(
@@ -48,18 +55,22 @@ object Tasks {
             SimplePasswordProducer("")
           ),
           hostName = head,
-          hostKeyVerifier = HostKeyVerifiers.DontVerify
+          hostKeyVerifier = HostKeyVerifiers.DontVerify,
+          connectTimeout = Some(10000)
         )
 
-        attemptConnection(config, logger).orElse(firstWorkingConnection(tail, logger))
+        Future(attemptConnection(config, logger).get).
+          fallbackTo(firstWorkingConnection(tail, logger))
 
       case _ =>
-        Failure(new Exception("Could not connect to roboRIO"))
+        Future.failed(new Exception("Could not connect to roboRIO"))
     }
   }
 
   lazy val rioConnection: Def.Initialize[Task[Try[SshClient]]] = Def.task {
-    firstWorkingConnection(rioHosts.value, streams.value.log)
+    Try(Await.result(
+      firstWorkingConnection(rioHosts.value, streams.value.log), Duration.Inf
+    ))
   }
 
   def deployJAR(logger: Logger, client: SshClient, assembledFile: File): Unit = {

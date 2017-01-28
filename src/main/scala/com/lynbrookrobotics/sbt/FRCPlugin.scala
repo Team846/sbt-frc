@@ -21,19 +21,18 @@ object FRCPlugin extends AutoPlugin {
   }
 
   override lazy val projectSettings = Seq(
-    Keys.robotClasses in Compile <<= sbt.Keys.compile in Compile map findRobotClasses,
+    Keys.robotClasses in Compile := (sbt.Keys.compile in Compile).map(findRobotClasses).value,
     Keys.robotClass := {
       val robotClasses = (Keys.robotClasses in Compile).value
       if (robotClasses.length > 1) {
-        sbt.Keys.streams.value.log.warn(s"Multiple robot classes detected: ${robotClasses.mkString(" ")}")
+        sbt.Keys.streams.value.log.warn(
+          s"Multiple robot classes detected: ${robotClasses.mkString(", ")}")
       }
 
       robotClasses.head
     },
-    Keys.deployJAR := Tasks.deployJAR.value,
     Keys.restartCode := Tasks.restartCode.value,
-    Keys.deploy <<= Keys.restartCode dependsOn Keys.deployJAR,
-    Keys.staticIP := false,
+    Keys.deploy := Tasks.deploy.value,
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.rename
       case PathList("reference.conf") =>
@@ -41,6 +40,7 @@ object FRCPlugin extends AutoPlugin {
       case _ => MergeStrategy.first
     },
     sbt.Keys.mainClass in assembly := Some("edu.wpi.first.wpilibj.RobotBase"),
-    sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++ Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value)))
+    sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++
+      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value)))
   )
 }

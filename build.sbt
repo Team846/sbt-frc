@@ -8,7 +8,11 @@ version := "0.3.1-SNAPSHOT"
 
 scalaVersion := "2.10.4"
 
-libraryDependencies += "com.decodified" %% "scala-ssh" % "0.7.0"
+libraryDependencies += "com.veact" %% "scala-ssh" % "0.8.0"
 
 publishMavenStyle := true
 publishTo := Some(Resolver.file("gh-pages-repo", baseDirectory.value / "repo"))
+
+lazy val root = Project("sbt-frc", file(".")).settings(
+  addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.3")
+)

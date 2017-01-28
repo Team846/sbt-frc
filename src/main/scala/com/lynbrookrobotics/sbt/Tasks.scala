@@ -5,65 +5,102 @@ import sbt._
 import sbt.Keys._
 import sbtassembly.AssemblyKeys
 
+import scala.util.{Success, Failure, Try}
+
 object Tasks {
   val remoteUser = "lvuser"
   val remoteJAR = "/home/lvuser/FRCUserProgram.jar"
 
-  lazy val rioHost = Def.task {
-    if (Keys.staticIP.value) {
-      s"10.${Keys.teamNumber.value.toString.dropRight(2)}.${Keys.teamNumber.value.toString.takeRight(2)}.2"
-    } else {
-      s"roboRIO-${Keys.teamNumber.value}-FRC.local"
-    }
-  }
+  lazy val rioHosts: Def.Initialize[Task[List[String]]] = Def.task {
+    val teamNumber = Keys.teamNumber.value
 
-  lazy val hostConfig = Def.task {
-    HostConfig(
-      PasswordLogin(
-        remoteUser,
-        SimplePasswordProducer("")
-      ),
-      hostName = rioHost.value,
-      hostKeyVerifier = HostKeyVerifiers.DontVerify
+    List(
+      s"roboRIO-${Keys.teamNumber.value}-FRC.local", // mDNS
+      s"roboRIO-${Keys.teamNumber.value}-FRC.lan", // mDNS
+      s"10.${teamNumber / 100}.${teamNumber % 100}.2", // Static IP,
+      "172.22.11.2" // USB
     )
   }
 
-  lazy val deployJAR = Def.task {
-    val logger = streams.value.log
-
-    val assembledFile = AssemblyKeys.assembly.value
-    val host = rioHost.value
-
-    logger.info(s"Deploying $assembledFile to $remoteUser@$host:$remoteJAR")
-
-    SSH(host, hostConfig.value) { client =>
-      client.authenticatedClient.right.toOption match {
-        case Some(_) =>
-          logger.success("Connected to roboRIO")
-          client.upload(assembledFile.absolutePath, remoteJAR).right.get
-          logger.success("Copied JAR to roboRIO")
-        case None =>
-          logger.error("Could not connect to roboRIO")
-      }
+  def attemptConnection(config: HostConfig, logger: Logger): Try[SshClient] = {
+    SshClient(config.hostName).right.toOption match {
+      case Some(client) =>
+        client.authenticatedClient.right.toOption match {
+          case Some(_) =>
+            logger.success(s"Connected to roboRIO @ ${config.hostName}")
+            Success(client)
+          case None =>
+            logger.error(s"Could not connect to roboRIO @ ${config.hostName}")
+            client.close()
+            Failure(new Exception("Could not connect to roboRIO"))
+        }
+      case None =>
+        Failure(new Exception("Could not connect to roboRIO"))
     }
   }
 
-  lazy val restartCode = Def.task {
+  def firstWorkingConnection(hosts: List[String], logger: Logger): Try[SshClient] = {
+    hosts match {
+      case head :: tail =>
+        val config = HostConfig(
+          PasswordLogin(
+            remoteUser,
+            SimplePasswordProducer("")
+          ),
+          hostName = head,
+          hostKeyVerifier = HostKeyVerifiers.DontVerify
+        )
+
+        attemptConnection(config, logger).orElse(firstWorkingConnection(tail, logger))
+
+      case _ =>
+        Failure(new Exception("Could not connect to roboRIO"))
+    }
+  }
+
+  lazy val rioConnection: Def.Initialize[Task[Try[SshClient]]] = Def.task {
+    firstWorkingConnection(rioHosts.value, streams.value.log)
+  }
+
+  def deployJAR(logger: Logger, client: SshClient, assembledFile: File): Unit = {
+    logger.info(s"Deploying $assembledFile to $remoteUser@${client.config.hostName}:$remoteJAR")
+
+    client.upload(assembledFile.absolutePath, remoteJAR).right.get
+    logger.success("Copied JAR to roboRIO")
+  }
+
+  def restartCodeWithClient(logger: Logger, client: SshClient): Unit = {
+    client.exec("killall netconsole-host").right.get
+    client.exec(". /etc/profile.d/natinst-path.sh; /usr/local/frc/bin/frcKillRobot.sh -t -r").right.get
+    logger.success("Restarted robot code")
+  }
+
+  lazy val deploy: Def.Initialize[Task[Unit]] = Def.task {
     val logger = streams.value.log
-    val host = rioHost.value
 
-    logger.info("Attempting to restart robot code")
+    rioConnection.value match {
+      case Success(client) =>
+        logger.success("Connected to roboRIO")
+        deployJAR(logger, client, AssemblyKeys.assembly.value)
+        restartCodeWithClient(logger, client)
+        client.close()
 
-    SSH(host, hostConfig.value) { client =>
-      client.authenticatedClient.right.toOption match {
-        case Some(_) =>
-          logger.success("Connected to roboRIO")
-          client.exec("killall netconsole-host").right.get
-          client.exec(". /etc/profile.d/natinst-path.sh; /usr/local/frc/bin/frcKillRobot.sh -t -r").right.get
-          logger.info("Restarted robot code")
-        case None =>
-          logger.error("Could not connect to roboRIO")
-      }
+      case Failure(_) =>
+        logger.error("Could not connect to roboRIO")
+    }
+  }
+
+  lazy val restartCode: Def.Initialize[Task[Unit]] = Def.task {
+    val logger = streams.value.log
+
+    rioConnection.value match {
+      case Success(client) =>
+        logger.success("Connected to roboRIO")
+        restartCodeWithClient(logger, client)
+        client.close()
+
+      case Failure(_) =>
+        logger.error("Could not connect to roboRIO")
     }
   }
 }

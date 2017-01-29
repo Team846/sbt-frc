@@ -46,31 +46,41 @@ object Tasks {
     }
   }
 
-  def firstWorkingConnection(hosts: List[String], logger: Logger): Future[SshClient] = {
-    hosts match {
-      case head :: tail =>
-        val config = HostConfig(
-          PasswordLogin(
-            remoteUser,
-            SimplePasswordProducer("")
-          ),
-          hostName = head,
-          hostKeyVerifier = HostKeyVerifiers.DontVerify,
-          connectTimeout = Some(10000)
-        )
+  def attemptAllConnections(hosts: List[String], logger: Logger): List[Future[SshClient]] = {
+    hosts.map { h =>
+      val config = HostConfig(
+        PasswordLogin(
+          remoteUser,
+          SimplePasswordProducer("")
+        ),
+        hostName = h,
+        hostKeyVerifier = HostKeyVerifiers.DontVerify,
+        connectTimeout = Some(10000)
+      )
 
-        Future(attemptConnection(config, logger).get).
-          fallbackTo(firstWorkingConnection(tail, logger))
-
-      case _ =>
-        Future.failed(new Exception("Could not connect to roboRIO"))
+      Future(attemptConnection(config, logger).get)
     }
   }
 
   lazy val rioConnection: Def.Initialize[Task[Try[SshClient]]] = Def.task {
-    Try(Await.result(
-      firstWorkingConnection(rioHosts.value, streams.value.log), Duration.Inf
-    ))
+    Try {
+      val allConnectionsWorking = attemptAllConnections(rioHosts.value, streams.value.log)
+      val firstWorking = allConnectionsWorking.reduce((a, b) =>
+        a.fallbackTo(b)
+      )
+
+      val workingConnection = Await.result(
+        firstWorking, Duration.Inf
+      )
+
+      allConnectionsWorking.foreach(_.foreach { c =>
+        if (c.config.hostName != workingConnection.config.hostName) {
+          c.close()
+        }
+      })
+
+      workingConnection
+    }
   }
 
   def deployJAR(logger: Logger, client: SshClient, assembledFile: File): Unit = {

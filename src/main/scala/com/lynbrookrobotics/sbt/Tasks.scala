@@ -1,6 +1,9 @@
 package com.lynbrookrobotics.sbt
 
+import java.io.ByteArrayInputStream
+
 import com.decodified.scalassh._
+import net.schmizz.sshj.xfer.{FileSystemFile, InMemorySourceFile}
 import sbt._
 import sbt.Keys._
 import sbtassembly.AssemblyKeys
@@ -8,12 +11,13 @@ import sbtassembly.AssemblyKeys
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Tasks {
   val remoteUser = "lvuser"
-  val remoteJAR = "/home/lvuser/FRCUserProgram.jar"
+  val remoteHome = "/home/lvuser"
+  val remoteJARMain = "/home/lvuser/FRCUserProgram.jar"
+  val remoteJARDeps = "/home/lvuser/FRCUserProgram-deps.jar"
 
   lazy val rioHosts: Def.Initialize[Task[List[String]]] = Def.task {
     val teamNumber = Keys.teamNumber.value
@@ -83,11 +87,40 @@ object Tasks {
     }
   }
 
-  def deployJAR(logger: Logger, client: SshClient, assembledFile: File): Unit = {
-    logger.info(s"Deploying $assembledFile to $remoteUser@${client.config.hostName}:$remoteJAR")
+  def deployJAR(logger: Logger, client: SshClient, assembledMain: File, assembledDeps: File): Unit = {
+    val depsFileAlreadyUploaded = client.sftp { s =>
+      val stat = s.statExistence(s"$remoteHome/last-deps-${assembledDeps.getName}")
+      stat != null
+    }.right.getOrElse(false)
 
-    client.upload(assembledFile.absolutePath, remoteJAR).right.get
-    logger.success("Copied JAR to roboRIO")
+    if (depsFileAlreadyUploaded) {
+      logger.info(s"Not deploying $assembledDeps because already uploaded")
+    } else {
+      logger.info(s"Deploying $assembledDeps to $remoteUser@${client.config.hostName}:$remoteJARDeps")
+      client.exec(s"rm $remoteHome/last-deps-*")
+      client.upload(assembledDeps.absolutePath, s"$remoteHome/temp-deps.jar").right.get
+      client.exec(s"cp $remoteHome/temp-deps.jar $remoteJARDeps")
+      client.exec(s"cp $remoteHome/temp-deps.jar $remoteHome/last-deps-${assembledDeps.getName}")
+      client.exec(s"rm $remoteHome/temp-deps.jar")
+    }
+
+    val mainFileAlreadyUploaded = client.sftp { s =>
+      val stat = s.statExistence(s"$remoteHome/last-main-${assembledMain.getName}")
+      stat != null
+    }.right.getOrElse(false)
+
+    if (mainFileAlreadyUploaded) {
+      logger.info(s"Not deploying $assembledMain because already uploaded")
+    } else {
+      logger.info(s"Deploying $assembledMain to $remoteUser@${client.config.hostName}:$remoteJARMain")
+      client.exec(s"rm $remoteHome/last-main-*")
+      client.upload(assembledMain.absolutePath, s"$remoteHome/temp-main.jar").right.get
+      client.exec(s"cp $remoteHome/temp-main.jar $remoteJARMain")
+      client.exec(s"cp $remoteHome/temp-main.jar $remoteHome/last-main-${assembledMain.getName}")
+      client.exec(s"rm $remoteHome/temp-main.jar")
+    }
+
+    logger.success("Copied JARs to roboRIO")
   }
 
   def restartCodeWithClient(logger: Logger, client: SshClient): Unit = {
@@ -102,7 +135,11 @@ object Tasks {
     rioConnection.value match {
       case Success(client) =>
         logger.success("Connected to roboRIO")
-        deployJAR(logger, client, AssemblyKeys.assembly.value)
+        deployJAR(
+          logger, client,
+          AssemblyKeys.assembly.value,
+          AssemblyKeys.assemblyPackageDependency.value
+        )
         restartCodeWithClient(logger, client)
         client.close()
 

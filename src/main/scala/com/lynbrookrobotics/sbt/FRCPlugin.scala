@@ -41,6 +41,11 @@ object FRCPlugin extends AutoPlugin {
     },
     sbt.Keys.mainClass in assembly := Some("edu.wpi.first.wpilibj.RobotBase"),
     sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++
-      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value)))
+      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value))),
+    assemblyOption in assembly := (assemblyOption in assembly).value.copy(
+      includeScala = false, includeDependency = false,
+      appendContentHash = true,
+      cacheOutput = false
+    )
   )
 }

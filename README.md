@@ -28,7 +28,7 @@ resolvers += "Funky-Repo" at "http://team846.github.io/repo"
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.13.0")
 
-addSbtPlugin("com.lynbrookrobotics" % "sbt-frc" % "0.3.0")
+addSbtPlugin("com.lynbrookrobotics" % "sbt-frc" % "0.4.0")
 ```
 
 Enable the plugin in your `build.sbt` with:
@@ -39,6 +39,8 @@ teamNumber := #
 ```
 
 ## Deploying
+When deploying for the first time, make sure that you copy the custom `robotCommand` file to the `/home/lvuser` folder on the roboRIO.
+
 To deploy code to the robot, run `sbt deploy` while connected to your robot's radio. This will package your code, connect to the robot, copy over the code, and launch it.
 
 ## Adding WPILib and NetworkTables

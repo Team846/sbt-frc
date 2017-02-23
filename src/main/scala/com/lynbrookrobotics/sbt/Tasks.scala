@@ -18,6 +18,7 @@ object Tasks {
   val remoteHome = "/home/lvuser"
   val remoteJARMain = "/home/lvuser/FRCUserProgram.jar"
   val remoteJARDeps = "/home/lvuser/FRCUserProgram-deps.jar"
+  val remoteNatives = "/usr/local/frc/lib"
 
   lazy val rioHosts: Def.Initialize[Task[List[String]]] = Def.task {
     val teamNumber = Keys.teamNumber.value
@@ -84,6 +85,54 @@ object Tasks {
       })
 
       workingConnection
+    }
+  }
+
+  def deployAllNatives(logger: Logger, client: SshClient, cp: Classpath, target: File, modules: Seq[ModuleID]): Unit = {
+    val classpath = cp.flatMap(a =>
+      a.metadata.get(moduleID.key).map(_ -> a.data)).toMap
+
+    val nativeLibs = modules.flatMap { i =>
+      classpath.get(i).orElse {
+        logger.warn(s"Unable to resolve $i, skipping")
+        None
+      }
+    }
+
+    val soFiles = nativeLibs.flatMap { jar =>
+      val unzipDirectory = target / "native-libs" / jar.getName
+      unzipDirectory.mkdirs()
+
+      val unzipped = IO.unzip(jar, unzipDirectory)
+
+      unzipped.filter(_.getName.endsWith(".so"))
+    }
+
+    soFiles.foreach { f =>
+      logger.info(s"Deploying ${f.getName} to $remoteUser@${client.config.hostName}:$remoteNatives")
+      client.upload(f.absolutePath, s"$remoteNatives/${f.getName}").right.get
+    }
+
+    logger.success("Copied native libraries to roboRIO")
+  }
+
+  lazy val deployNatives  = Def.task {
+    val logger = streams.value.log
+
+    rioConnection.value match {
+      case Success(client) =>
+        logger.success("Connected to roboRIO")
+        deployAllNatives(
+          logger, client,
+          (dependencyClasspath in Compile).value,
+          target.value,
+          Keys.nativeDependencies.value
+        )
+
+        client.close()
+
+      case Failure(_) =>
+        logger.error("Could not connect to roboRIO")
     }
   }
 

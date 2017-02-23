@@ -46,6 +46,18 @@ object FRCPlugin extends AutoPlugin {
       includeScala = false, includeDependency = false,
       appendContentHash = true,
       cacheOutput = false
-    )
+    ),
+    Keys.nativeDependencies := Seq.empty,
+    sbt.Keys.libraryDependencies ++= Keys.nativeDependencies.value,
+    assemblyExcludedJars := {
+      val cp = (sbt.Keys.fullClasspath in assembly).value
+      val nativeDeps = Keys.nativeDependencies.value
+
+      assemblyExcludedJars.value ++ cp filter { c =>
+        c.metadata.get(sbt.Keys.moduleID.key).
+          exists(m => nativeDeps.contains(m))
+      }
+    },
+    Keys.deployNatives := Tasks.deployNatives.value
   )
 }

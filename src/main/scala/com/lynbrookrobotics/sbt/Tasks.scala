@@ -129,6 +129,23 @@ object Tasks {
     logger.success("Restarted robot code")
   }
 
+  lazy val restore: Def.Initialize[Task[Unit]] = Def.task {
+    val logger = streams.value.log
+
+    rioConnection.value match {
+      case Success(client) =>
+        logger.success("Connected to roboRIO")
+
+        client.exec(s"mv $remoteHome/last-main-* $remoteJARDeps")
+
+        restartCodeWithClient(logger, client)
+        client.close()
+
+      case Failure(_) =>
+        logger.error("Could not connect to roboRIO")
+    }
+  }
+
   lazy val deploy: Def.Initialize[Task[Unit]] = Def.task {
     val logger = streams.value.log
 

@@ -1,23 +1,29 @@
 package com.lynbrookrobotics.sbt
 
-import java.io.ByteArrayInputStream
-
 import com.decodified.scalassh._
-import net.schmizz.sshj.xfer.{FileSystemFile, InMemorySourceFile}
-import sbt._
 import sbt.Keys._
+import sbt._
 import sbtassembly.AssemblyKeys
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object Tasks {
   val remoteUser = "lvuser"
   val remoteHome = "/home/lvuser"
-  val remoteJARMain = "/home/lvuser/FRCUserProgram.jar"
-  val remoteJARDeps = "/home/lvuser/FRCUserProgram-deps.jar"
+  val remoteMain = s"$remoteHome/FRCUserProgram.jar"
+  val remoteDeps = s"$remoteHome/FRCUserProgram-deps.jar"
+
+  val remoteMainHash = s"$remoteHome/main-hash"
+  val remoteDepsHash = s"$remoteHome/deps-hash"
+
+  val remoteLastMain = s"$remoteHome/last-main"
+  val remoteLastDeps = s"$remoteHome/last-deps"
+
+  val remoteTmpMain = "/tmp/main"
+  val remoteTmpDeps = "/tmp/deps"
 
   lazy val rioHosts: Def.Initialize[Task[List[String]]] = Def.task {
     val teamNumber = Keys.teamNumber.value
@@ -88,36 +94,32 @@ object Tasks {
   }
 
   def deployJAR(logger: Logger, client: SshClient, assembledMain: File, assembledDeps: File): Unit = {
-    val depsFileAlreadyUploaded = client.sftp { s =>
-      val stat = s.statExistence(s"$remoteHome/last-deps-${assembledDeps.getName}")
-      stat != null
-    }.right.getOrElse(false)
+    val depsFileAlreadyUploaded = client.exec(s"cat $remoteDepsHash").right
+      .exists(_.stdOutAsString().trim == assembledDeps.name)
 
     if (depsFileAlreadyUploaded) {
       logger.info(s"Not deploying $assembledDeps because already uploaded")
+      client.exec(s"cp $remoteDeps $remoteLastDeps")
     } else {
-      logger.info(s"Deploying $assembledDeps to $remoteUser@${client.config.hostName}:$remoteJARDeps")
-      client.exec(s"rm $remoteHome/last-deps-*")
-      client.upload(assembledDeps.absolutePath, s"$remoteHome/temp-deps.jar").right.get
-      client.exec(s"cp $remoteHome/temp-deps.jar $remoteJARDeps")
-      client.exec(s"cp $remoteHome/temp-deps.jar $remoteHome/last-deps-${assembledDeps.getName}")
-      client.exec(s"rm $remoteHome/temp-deps.jar")
+      logger.info(s"Deploying $assembledDeps to $remoteUser@${client.config.hostName}:$remoteDeps")
+      client.upload(assembledDeps.absolutePath, remoteTmpDeps).right.get
+      client.exec(s"mv $remoteDeps $remoteLastDeps")
+      client.exec(s"mv $remoteTmpDeps $remoteDeps")
+      client.exec(s"echo ${assembledDeps.name} > $remoteDepsHash")
     }
 
-    val mainFileAlreadyUploaded = client.sftp { s =>
-      val stat = s.statExistence(s"$remoteHome/last-main-${assembledMain.getName}")
-      stat != null
-    }.right.getOrElse(false)
+    val mainFileAlreadyUploaded = client.exec(s"cat $remoteMainHash").right
+      .exists(_.stdOutAsString().trim == assembledMain.name)
 
     if (mainFileAlreadyUploaded) {
       logger.info(s"Not deploying $assembledMain because already uploaded")
+      client.exec(s"cp $remoteMain $remoteLastMain")
     } else {
-      logger.info(s"Deploying $assembledMain to $remoteUser@${client.config.hostName}:$remoteJARMain")
-      client.exec(s"rm $remoteHome/last-main-*")
-      client.upload(assembledMain.absolutePath, s"$remoteHome/temp-main.jar").right.get
-      client.exec(s"cp $remoteHome/temp-main.jar $remoteJARMain")
-      client.exec(s"cp $remoteHome/temp-main.jar $remoteHome/last-main-${assembledMain.getName}")
-      client.exec(s"rm $remoteHome/temp-main.jar")
+      logger.info(s"Deploying $assembledMain to $remoteUser@${client.config.hostName}:$remoteMain")
+      client.upload(assembledMain.absolutePath, remoteTmpMain).right.get
+      client.exec(s"mv $remoteMain $remoteLastMain")
+      client.exec(s"mv $remoteTmpMain $remoteMain")
+      client.exec(s"echo ${assembledMain.name} > $remoteMainHash")
     }
 
     logger.success("Copied JARs to roboRIO")
@@ -136,7 +138,12 @@ object Tasks {
       case Success(client) =>
         logger.success("Connected to roboRIO")
 
-        client.exec(s"mv $remoteHome/last-main-* $remoteJARDeps")
+        client.exec(s"mv $remoteLastMain $remoteMain").right.get
+        client.exec(s"mv $remoteLastDeps $remoteDeps").right.get
+        client.exec(s"rm $remoteMainHash")
+        client.exec(s"rm $remoteDepsHash")
+
+        logger.success("Restored last deploy")
 
         restartCodeWithClient(logger, client)
         client.close()

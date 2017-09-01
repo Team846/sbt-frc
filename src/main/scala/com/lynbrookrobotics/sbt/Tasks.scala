@@ -138,14 +138,23 @@ object Tasks {
       case Success(client) =>
         logger.success("Connected to roboRIO")
 
-        client.exec(s"mv $remoteLastMain $remoteMain").right.get
-        client.exec(s"mv $remoteLastDeps $remoteDeps").right.get
-        client.exec(s"rm $remoteMainHash")
-        client.exec(s"rm $remoteDepsHash")
+        val revertible = client.sftp { s =>
+          s.statExistence(remoteMainHash) != null && s.statExistence(remoteDepsHash) != null
+        }.right.getOrElse(false)
 
-        logger.success("Restored last deploy")
+        if (revertible) {
+          client.exec(s"mv $remoteLastMain $remoteMain")
+          client.exec(s"mv $remoteLastDeps $remoteDeps")
+          client.exec(s"rm $remoteMainHash")
+          client.exec(s"rm $remoteDepsHash")
 
-        restartCodeWithClient(logger, client)
+          logger.success("Restored last deploy")
+
+          restartCodeWithClient(logger, client)
+        } else {
+          logger.error("Cannot restore more than once.")
+        }
+
         client.close()
 
       case Failure(_) =>

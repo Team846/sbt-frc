@@ -138,6 +138,7 @@ object Tasks {
 
         client.exec(s"rm $remoteDeps $remoteDepsHash")
         client.exec(s"rm $remoteMain $remoteMainHash")
+	client.exec(s"rm $remoteConf")
 
         client.close()
 

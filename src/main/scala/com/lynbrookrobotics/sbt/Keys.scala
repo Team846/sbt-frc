@@ -12,4 +12,5 @@ object Keys {
 
   lazy val restore = taskKey[Unit]("Restore working state of robot")
   lazy val itWorks = taskKey[Unit]("Save current state of robot")
+  lazy val roboClean = taskKey[Unit]("Deletes current deploy")
 }

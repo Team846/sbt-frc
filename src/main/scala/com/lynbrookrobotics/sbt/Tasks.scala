@@ -127,6 +127,23 @@ object Tasks {
     logger.success("Restarted robot code")
   }
 
+  lazy val roboClean: Def.Initialize[Task[Unit]] = Def.task {
+    val logger = streams.value.log
+
+    rioConnection.value match {
+      case Success(client) =>
+        logger.success("Connected to roboRIO")
+
+        client.exec(s"rm $remoteDeps $remoteDepsHash")
+        client.exec(s"rm $remoteMain $remoteMainHash")
+
+        client.close()
+
+      case Failure(_) =>
+        logger.error("Could not connect to roboRIO")
+    }
+  }
+
   lazy val itWorks: Def.Initialize[Task[Unit]] = Def.task {
     val logger = streams.value.log
 

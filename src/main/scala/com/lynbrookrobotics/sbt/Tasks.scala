@@ -15,12 +15,14 @@ object Tasks {
   val remoteHome = "/home/lvuser"
   val remoteMain = s"$remoteHome/FRCUserProgram.jar"
   val remoteDeps = s"$remoteHome/FRCUserProgram-deps.jar"
+  val remoteConf = s"$remoteHome/robot-config.json"
 
   val remoteMainHash = s"$remoteHome/main-hash"
   val remoteDepsHash = s"$remoteHome/deps-hash"
 
   val remoteLastMain = s"$remoteHome/last-main"
   val remoteLastDeps = s"$remoteHome/last-deps"
+  val remoteLastConf = s"$remoteHome/last-conf"
 
   val remoteTmpMain = "/tmp/main"
   val remoteTmpDeps = "/tmp/deps"
@@ -153,6 +155,7 @@ object Tasks {
 
         client.exec(s"cp $remoteDeps $remoteLastDeps")
         client.exec(s"cp $remoteMain $remoteLastMain")
+        client.exec(s"cp $remoteConf $remoteLastConf")
 
         client.close()
 
@@ -175,6 +178,7 @@ object Tasks {
         if (revertible) {
           client.exec(s"mv $remoteLastMain $remoteMain")
           client.exec(s"mv $remoteLastDeps $remoteDeps")
+          client.exec(s"mv $remoteLastConf $remoteConf")
           client.exec(s"rm $remoteMainHash")
           client.exec(s"rm $remoteDepsHash")
 

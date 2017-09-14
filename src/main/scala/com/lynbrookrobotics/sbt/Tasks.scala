@@ -138,7 +138,7 @@ object Tasks {
 
         client.exec(s"rm $remoteDeps $remoteDepsHash")
         client.exec(s"rm $remoteMain $remoteMainHash")
-	client.exec(s"rm $remoteConf")
+        client.exec(s"rm $remoteConf")
 
         client.close()
 
@@ -177,9 +177,9 @@ object Tasks {
         }.right.getOrElse(false)
 
         if (revertible) {
-          client.exec(s"mv $remoteLastMain $remoteMain")
-          client.exec(s"mv $remoteLastDeps $remoteDeps")
-          client.exec(s"mv $remoteLastConf $remoteConf")
+          client.exec(s"cp $remoteLastMain $remoteMain")
+          client.exec(s"cp $remoteLastDeps $remoteDeps")
+          client.exec(s"cp $remoteLastConf $remoteConf")
           client.exec(s"rm $remoteMainHash")
           client.exec(s"rm $remoteDepsHash")
 

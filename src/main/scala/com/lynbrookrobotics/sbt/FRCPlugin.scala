@@ -35,6 +35,7 @@ object FRCPlugin extends AutoPlugin {
     Keys.deploy := Tasks.deploy.value,
     Keys.restore := Tasks.restore.value,
     Keys.itWorks := Tasks.itWorks.value,
+    Keys.roboClean := Tasks.roboClean.value,
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.rename
       case PathList("reference.conf") =>

@@ -141,6 +141,7 @@ object Tasks {
         client.exec(s"rm $remoteConf")
 
         client.close()
+        logger.success("Deleted latest jars and config.")
 
       case Failure(_) =>
         logger.error("Could not connect to roboRIO")
@@ -159,6 +160,7 @@ object Tasks {
         client.exec(s"cp $remoteConf $remoteLastConf")
 
         client.close()
+        logger.success("Saved latest jars and config for restoration later.")
 
       case Failure(_) =>
         logger.error("Could not connect to roboRIO")
@@ -183,11 +185,11 @@ object Tasks {
           client.exec(s"rm $remoteMainHash")
           client.exec(s"rm $remoteDepsHash")
 
-          logger.success("Restored last deploy")
+          logger.success("Restored working jars and config.")
 
           restartCodeWithClient(logger, client)
         } else {
-          logger.error("Cannot restore more than once.")
+          logger.error("No working jars/config have been saved.")
         }
 
         client.close()

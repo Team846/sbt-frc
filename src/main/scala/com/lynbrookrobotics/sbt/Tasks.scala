@@ -32,7 +32,6 @@ object Tasks {
 
     List(
       s"roboRIO-${Keys.teamNumber.value}-FRC.local", // mDNS
-      s"roboRIO-${Keys.teamNumber.value}-FRC.lan", // mDNS
       s"10.${teamNumber / 100}.${teamNumber % 100}.2", // Static IP,
       "172.22.11.2" // USB
     )

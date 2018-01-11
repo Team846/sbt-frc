@@ -1,10 +1,11 @@
 package com.lynbrookrobotics.sbt
 
+import sbt.Keys.streams
 import sbt.Package.ManifestAttributes
 import sbt._
-import sbt.inc.Analysis
-import sbtassembly.{PathList, MergeStrategy}
+import sbtassembly.{MergeStrategy, PathList}
 import xsbt.api.Discovery
+import xsbti.compile.CompileAnalysis
 
 object FRCPlugin extends AutoPlugin {
   override def requires = plugins.JvmPlugin && sbtassembly.AssemblyPlugin
@@ -13,7 +14,7 @@ object FRCPlugin extends AutoPlugin {
 
   import sbtassembly.AssemblyKeys._
 
-  def findRobotClasses(analysis: Analysis): Seq[String] = {
+  def findRobotClasses(analysis: CompileAnalysis): Seq[String] = {
     Discovery(Set("edu.wpi.first.wpilibj.RobotBase"), Set.empty)(Tests.allDefs(analysis)) collect {
       case (definition, discovery) if discovery.baseClasses.contains("edu.wpi.first.wpilibj.RobotBase") =>
         definition.name()
@@ -24,8 +25,9 @@ object FRCPlugin extends AutoPlugin {
     Keys.robotClasses in Compile := (sbt.Keys.compile in Compile).map(findRobotClasses).value,
     Keys.robotClass := {
       val robotClasses = (Keys.robotClasses in Compile).value
+      val logger = streams.value.log
       if (robotClasses.length > 1) {
-        sbt.Keys.streams.value.log.warn(
+        logger.warn(
           s"Multiple robot classes detected: ${robotClasses.mkString(", ")}")
       }
 

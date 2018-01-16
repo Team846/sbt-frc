@@ -35,6 +35,7 @@ object FRCPlugin extends AutoPlugin {
     },
     Keys.restartCode := Tasks.restartCode.value,
     Keys.deploy := Tasks.deploy.value,
+    Keys.robotConsole := Tasks.robotConsole.value,
     Keys.restore := Tasks.restore.value,
     Keys.itWorks := Tasks.itWorks.value,
     Keys.roboClean := Tasks.roboClean.value,

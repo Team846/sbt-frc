@@ -224,7 +224,6 @@ object Tasks {
 
     val SIZE = 1024
     val PORT = 6666
-    val logger = streams.value.log
 
     val socket = new DatagramSocket(PORT)
     while (true) {
@@ -232,8 +231,7 @@ object Tasks {
       val packet = new DatagramPacket(buffer, buffer.length)
       socket.receive(packet)
       val message = new String(packet.getData)
-      val ipAddress = packet.getAddress().toString
-      printf(message)
+      print(message)
     }
   }
 

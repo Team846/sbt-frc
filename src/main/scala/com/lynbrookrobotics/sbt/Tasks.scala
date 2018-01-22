@@ -226,13 +226,25 @@ object Tasks {
     val PORT = 6666
 
     val socket = new DatagramSocket(PORT)
-    while (true) {
-      val buffer = new Array[Byte](SIZE)
-      val packet = new DatagramPacket(buffer, buffer.length)
-      socket.receive(packet)
-      val message = new String(packet.getData)
-      print(message)
-    }
+
+    val thr = new Thread(() => while (!Thread.interrupted()) {
+      try {
+        val buffer = new Array[Byte](SIZE)
+        val packet = new DatagramPacket(buffer, buffer.length)
+        socket.receive(packet)
+        val message = new String(packet.getData)
+        print(message)
+      } catch {
+        case (e: Throwable) =>
+      }
+    })
+
+    thr.start()
+
+    scala.io.StdIn.readLine()
+    System.out.println("\nTerminating")
+    thr.interrupt()
+    socket.close()
   }
 
   lazy val restartCode: Def.Initialize[Task[Unit]] = Def.task {

@@ -221,10 +221,8 @@ object Tasks {
   }
 
   lazy val robotConsole: Def.Initialize[Task[Unit]] = Def.task {
-
     val SIZE = 1024
     val PORT = 6666
-
     val socket = new DatagramSocket(PORT)
 
     val thr = new Thread(() => while (!Thread.interrupted()) {

@@ -1,5 +1,7 @@
 package com.lynbrookrobotics.sbt
 
+import java.net.{DatagramPacket, DatagramSocket}
+
 import com.decodified.scalassh._
 import sbt.Keys._
 import sbt._
@@ -216,6 +218,31 @@ object Tasks {
       case Failure(_) =>
         logger.error("Could not connect to roboRIO")
     }
+  }
+
+  lazy val robotConsole: Def.Initialize[Task[Unit]] = Def.task {
+    val SIZE = 1024
+    val PORT = 6666
+    val socket = new DatagramSocket(PORT)
+
+    val thr = new Thread(() => while (!Thread.interrupted()) {
+      try {
+        val buffer = new Array[Byte](SIZE)
+        val packet = new DatagramPacket(buffer, buffer.length)
+        socket.receive(packet)
+        val message = new String(packet.getData)
+        print(message)
+      } catch {
+        case (e: Throwable) =>
+      }
+    })
+
+    thr.start()
+
+    scala.io.StdIn.readLine()
+    println("\nTerminating")
+    thr.interrupt()
+    socket.close()
   }
 
   lazy val restartCode: Def.Initialize[Task[Unit]] = Def.task {

@@ -240,7 +240,7 @@ object Tasks {
     thr.start()
 
     scala.io.StdIn.readLine()
-    System.out.println("\nTerminating")
+    println("\nTerminating")
     thr.interrupt()
     socket.close()
   }

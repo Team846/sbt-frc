@@ -1,11 +1,7 @@
 package com.lynbrookrobotics.sbtfrc
 
-import sbt.Keys.streams
-import sbt.Package.ManifestAttributes
 import sbt._
 import sbtassembly.{MergeStrategy, PathList}
-import xsbt.api.Discovery
-import xsbti.compile.CompileAnalysis
 
 object FRCPlugin extends AutoPlugin {
   override def requires = plugins.JvmPlugin && sbtassembly.AssemblyPlugin
@@ -28,9 +24,9 @@ object FRCPlugin extends AutoPlugin {
       val logger = streams.value.log
       if (robotClasses.length > 1) {
         logger.warn(
-          s"Multiple robot classes detected: ${robotClasses.mkString(", ")}")
+          s"Multiple robot classes detected: ${robotClasses.mkString(", ")}"
+        )
       }
-
       robotClasses.head
     },
     Keys.restartCode := Tasks.restartCode.value,

@@ -26,77 +26,6 @@ object Tasks {
   val remoteLastDeps = s"$remoteHome/last-deps"
   val remoteLastConf = s"$remoteHome/last-conf"
 
-  val remoteTmpMain = "/tmp/main"
-  val remoteTmpDeps = "/tmp/deps"
-
-  lazy val rioHosts: Def.Initialize[Task[List[String]]] = Def.task {
-    val teamNumber = Keys.teamNumber.value
-
-    List(
-      s"roboRIO-${Keys.teamNumber.value}-FRC.local", // mDNS
-      s"roboRIO-${Keys.teamNumber.value}-FRC.lan", // DNS
-      s"10.${teamNumber / 100}.${teamNumber % 100}.2", // Static IP,
-      "172.22.11.2" // USB
-    )
-  }
-
-  def attemptConnection(config: HostConfig, logger: Logger): Try[SshClient] = {
-    logger.info(s"Attempting to connect to roboRIO @ ${config.hostName}")
-    SshClient(config.hostName, config) match {
-      case Right(client) =>
-        client.authenticatedClient.right.toOption match {
-          case Some(_) =>
-            logger.success(s"Connected to roboRIO @ ${config.hostName}")
-            Success(client)
-          case None =>
-            logger.error(s"Could not connect to roboRIO @ ${config.hostName}")
-            client.close()
-            Failure(new Exception("Could not connect to roboRIO"))
-        }
-
-      case Left(e) =>
-        logger.error(e)
-        Failure(new Exception("Could not connect to roboRIO"))
-    }
-  }
-
-  def attemptAllConnections(hosts: List[String], logger: Logger): List[Future[SshClient]] = {
-    hosts.map { h =>
-      val config = HostConfig(
-        PasswordLogin(
-          remoteUser,
-          SimplePasswordProducer("")
-        ),
-        hostName = h,
-        hostKeyVerifier = HostKeyVerifiers.DontVerify,
-        connectTimeout = Some(10000)
-      )
-
-      Future(attemptConnection(config, logger).get)
-    }
-  }
-
-  lazy val rioConnection: Def.Initialize[Task[Try[SshClient]]] = Def.task {
-    Try {
-      val allConnectionsWorking = attemptAllConnections(rioHosts.value, streams.value.log)
-      val firstWorking = allConnectionsWorking.reduce((a, b) =>
-        a.fallbackTo(b)
-      )
-
-      val workingConnection = Await.result(
-        firstWorking, Duration.Inf
-      )
-
-      allConnectionsWorking.foreach(_.foreach { c =>
-        if (c.config.hostName != workingConnection.config.hostName) {
-          c.close()
-        }
-      })
-
-      workingConnection
-    }
-  }
-
   def deployJAR(logger: Logger, client: SshClient, assembledMain: File, assembledDeps: File): Unit = {
     val depsFileAlreadyUploaded = client.exec(s"cat $remoteDepsHash").right
       .exists(_.stdOutAsString().trim == assembledDeps.name)
@@ -123,12 +52,6 @@ object Tasks {
     }
 
     logger.success("Copied JARs to roboRIO")
-  }
-
-  def restartCodeWithClient(logger: Logger, client: SshClient): Unit = {
-    client.exec("killall netconsole-host").right.get
-    client.exec(". /etc/profile.d/natinst-path.sh; /usr/local/frc/bin/frcKillRobot.sh -t -r").right.get
-    logger.success("Restarted robot code")
   }
 
   lazy val roboClean: Def.Initialize[Task[Unit]] = Def.task {
@@ -220,7 +143,7 @@ object Tasks {
     }
   }
 
-  lazy val robotConsole: Def.Initialize[Task[Unit]] = Def.task {
+  lazy val robotConsole: Def.Initi3alize[Task[Unit]] = Def.task {
     val SIZE = 1024
     val PORT = 6666
     val socket = new DatagramSocket(PORT)

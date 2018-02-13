@@ -2,7 +2,7 @@ package com.lynbrookrobotics.sbt
 
 import sbt._
 
-object Keys {
+abstract class Keys {
   lazy val teamNumber = settingKey[Int]("Your FRC team #")
 
   lazy val restartCode = taskKey[Unit]("Restart robot code")

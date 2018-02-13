@@ -14,7 +14,7 @@ import SbtUtils._
 
 abstract class SbtFrcPlugin() {
 
-  val keys: Keys
+  val keys: SbtFrcKeys
 
   lazy val connection: Def.Initialize[Task[SshClient]] = Def.task {
     implicit val logger: Logger = streams.value.log

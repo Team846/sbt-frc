@@ -1,9 +1,13 @@
 package com.lynbrookrobotics.sbtfrc
 
 import sbt._
+import sbt.Keys._
+import sbt.Package.ManifestAttributes
 import sbtassembly.{MergeStrategy, PathList}
+import xsbt.api.Discovery
+import xsbti.compile.CompileAnalysis
 
-object FRCPlugin extends AutoPlugin {
+object FRCPluginJVM extends AutoPlugin() {
   override def requires = plugins.JvmPlugin && sbtassembly.AssemblyPlugin
 
   val autoImport = Keys
@@ -18,6 +22,7 @@ object FRCPlugin extends AutoPlugin {
   }
 
   override lazy val projectSettings = Seq(
+    Keys.trackedFiles := Set(RoboRioJvm.codePath, RoboRioJvm.depsPath),
     Keys.robotClasses in Compile := (sbt.Keys.compile in Compile).map(findRobotClasses).value,
     Keys.robotClass := {
       val robotClasses = (Keys.robotClasses in Compile).value
@@ -29,12 +34,12 @@ object FRCPlugin extends AutoPlugin {
       }
       robotClasses.head
     },
-    Keys.restartCode := Tasks.restartCode.value,
-    Keys.deploy := Tasks.deploy.value,
-    Keys.robotConsole := Tasks.robotConsole.value,
-    Keys.restore := Tasks.restore.value,
-    Keys.itWorks := Tasks.itWorks.value,
-    Keys.roboClean := Tasks.roboClean.value,
+    Keys.restartCode := RoboRioJvm.Runtime.restartRobotCodeTsk.value,
+    Keys.deploy := RoboRioJvm.deployCode.value,
+    Keys.robotConsole := RoboRioJvm.Runtime.viewRobotConsoleTsk.value,
+    Keys.restoreWorking := RoboRioJvm.Deployment.restoreRobotCodeVersionTsk.value,
+    Keys.markWorking := RoboRioJvm.Deployment.markRobotCodeVersionTsk.value,
+    Keys.cleanRobot := RoboRioJvm.Deployment.deleteRobotCodeTsk.value,
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.rename
       case PathList("reference.conf") =>

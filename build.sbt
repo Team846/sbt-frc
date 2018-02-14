@@ -1,22 +1,26 @@
 sbtPlugin := true
 
-organization := "com.lynbrookrobotics"
+organization in ThisBuild := "com.lynbrookrobotics"
 
 name := "sbt-frc"
 
-version := "0.5.0"
+version in ThisBuild := "0.5.0"
 
-scalaVersion := "2.12.4"
+scalaVersion in ThisBuild  := "2.12.4"
 
 libraryDependencies += "com.github.seratch.com.veact" %% "scala-ssh" % "0.8.0-1"
 
-publishMavenStyle := true
-publishTo := Some(Resolver.file("gh-pages-repo", baseDirectory.value / "repo"))
+publishMavenStyle in ThisBuild := true
+publishTo in ThisBuild := Some(Resolver.file("gh-pages-repo", baseDirectory.value / "repo"))
 
 lazy val root = Project("sbt-frc", file("."))
 
-lazy val sbtFrcJvm = Project("sbt-frc-jvm", file("jvm")).dependsOn(root).settings(
+lazy val sbtFrcJvm = project.in(file("jvm")).dependsOn(root).settings(
+  name := "sbt-frc-jvm",
+  sbtPlugin := true,
   addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.6")
 )
 
-lazy val sbtFrcNative = Project("sbt-frc-native", file("native")).dependsOn(root)
+lazy val sbtFrcNative = project.in(file("native")).dependsOn(root).settings (
+  sbtPlugin := true
+)

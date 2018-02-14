@@ -4,6 +4,7 @@ import sbt._
 
 abstract class SbtFrcKeys {
   lazy val teamNumber = settingKey[Int]("Your FRC team #")
+  lazy val trackedFiles = settingKey[Set[String]]("Files to keep working versions of")
 
   lazy val restartCode = taskKey[Unit]("Restart robot code")
   lazy val deploy = taskKey[Unit]("Deploy code to robot and restart")

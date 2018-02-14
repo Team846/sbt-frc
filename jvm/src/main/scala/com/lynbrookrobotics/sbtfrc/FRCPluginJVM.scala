@@ -1,13 +1,13 @@
-package com.lynbrookrobotics.sbt
+package com.lynbrookrobotics.sbtfrc
 
-import sbt.Keys.streams
-import sbt.Package.ManifestAttributes
 import sbt._
+import sbt.Keys._
+import sbt.Package.ManifestAttributes
 import sbtassembly.{MergeStrategy, PathList}
 import xsbt.api.Discovery
 import xsbti.compile.CompileAnalysis
 
-object FRCPlugin extends AutoPlugin {
+object FRCPluginJVM extends AutoPlugin() {
   override def requires = plugins.JvmPlugin && sbtassembly.AssemblyPlugin
 
   val autoImport = Keys
@@ -22,23 +22,24 @@ object FRCPlugin extends AutoPlugin {
   }
 
   override lazy val projectSettings = Seq(
+    Keys.trackedFiles := Set(RoboRioJvm.codePath),
     Keys.robotClasses in Compile := (sbt.Keys.compile in Compile).map(findRobotClasses).value,
     Keys.robotClass := {
       val robotClasses = (Keys.robotClasses in Compile).value
       val logger = streams.value.log
       if (robotClasses.length > 1) {
         logger.warn(
-          s"Multiple robot classes detected: ${robotClasses.mkString(", ")}")
+          s"Multiple robot classes detected: ${robotClasses.mkString(", ")}"
+        )
       }
-
       robotClasses.head
     },
-    Keys.restartCode := Tasks.restartCode.value,
-    Keys.deploy := Tasks.deploy.value,
-    Keys.robotConsole := Tasks.robotConsole.value,
-    Keys.restore := Tasks.restore.value,
-    Keys.itWorks := Tasks.itWorks.value,
-    Keys.roboClean := Tasks.roboClean.value,
+    Keys.restartCode := RoboRioJvm.Runtime.restartRobotCodeTsk.value,
+    Keys.deploy := RoboRioJvm.deployCode.value,
+    Keys.robotConsole := RoboRioJvm.Runtime.viewRobotConsoleTsk.value,
+    Keys.restoreWorking := RoboRioJvm.Deployment.restoreRobotCodeVersionTsk.value,
+    Keys.markWorking := RoboRioJvm.Deployment.markRobotCodeVersionTsk.value,
+    Keys.cleanRobot := RoboRioJvm.Deployment.deleteRobotCodeTsk.value,
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.rename
       case PathList("reference.conf") =>
@@ -47,11 +48,6 @@ object FRCPlugin extends AutoPlugin {
     },
     sbt.Keys.mainClass in assembly := Some("edu.wpi.first.wpilibj.RobotBase"),
     sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++
-      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value))),
-    assemblyOption in assembly := (assemblyOption in assembly).value.copy(
-      includeScala = false, includeDependency = false,
-      appendContentHash = true,
-      cacheOutput = false
-    )
+      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value)))
   )
 }

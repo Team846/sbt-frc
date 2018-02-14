@@ -22,7 +22,7 @@ object FRCPluginJVM extends AutoPlugin() {
   }
 
   override lazy val projectSettings = Seq(
-    Keys.trackedFiles := Set(RoboRioJvm.codePath, RoboRioJvm.depsPath),
+    Keys.trackedFiles := Set(RoboRioJvm.codePath),
     Keys.robotClasses in Compile := (sbt.Keys.compile in Compile).map(findRobotClasses).value,
     Keys.robotClass := {
       val robotClasses = (Keys.robotClasses in Compile).value
@@ -48,11 +48,6 @@ object FRCPluginJVM extends AutoPlugin() {
     },
     sbt.Keys.mainClass in assembly := Some("edu.wpi.first.wpilibj.RobotBase"),
     sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++
-      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value))),
-    assemblyOption in assembly := (assemblyOption in assembly).value.copy(
-      includeScala = false, includeDependency = false,
-      appendContentHash = true,
-      cacheOutput = false
-    )
+      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value)))
   )
 }

@@ -20,7 +20,7 @@ abstract class RoboRio(keys: SbtFrcKeys) {
 
   def sha1(file: String)
           (implicit c: SshClient): String =
-    c.exec(s"sha1sum $file | cut -c 1-40").right.get.stdOutAsString()
+    c.exec(s"sha1sum $file | cut -c 1-40").right.get.stdOutAsString().trim
 
   object Connection {
     def addresses(teamNumber: Int) = List(
@@ -133,10 +133,10 @@ abstract class RoboRio(keys: SbtFrcKeys) {
         client.upload(file.getAbsolutePath, s"/tmp/$localHash").right.get
         client.exec(s"mv /tmp/$localHash $targetPath").right.get
 
-        if (localHash != remoteHash) {
+        if (localHash != sha1(targetPath)) { // corruption check
           logger.err(s"local hash and target hash do not match")
         } else {
-          logger.success(s"sent file")
+          logger.success(s"sent file - hash: $localHash")
         }
 
       } else {
@@ -151,7 +151,6 @@ abstract class RoboRio(keys: SbtFrcKeys) {
     )
 
     def restartRobotCode(implicit client: SshClient, logger: Logger): Unit = {
-      client.exec("killall netconsole-host").right.get
       client.exec(". /etc/profile.d/natinst-path.sh; /usr/local/frc/bin/frcKillRobot.sh -t -r").right.get
       logger.success("restarted robot code")
     }

@@ -22,5 +22,7 @@ lazy val sbtFrcJvm = project.in(file("jvm")).dependsOn(root).settings(
 )
 
 lazy val sbtFrcNative = project.in(file("native")).dependsOn(root).settings (
-  sbtPlugin := true
+  name := "sbt-frc-native",
+  sbtPlugin := true,
+  addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.7-arm-jni-threads")
 )

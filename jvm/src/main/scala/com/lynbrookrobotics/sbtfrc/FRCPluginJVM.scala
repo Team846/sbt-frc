@@ -1,8 +1,8 @@
 package com.lynbrookrobotics.sbtfrc
 
-import sbt._
 import sbt.Keys._
 import sbt.Package.ManifestAttributes
+import sbt._
 import sbtassembly.{MergeStrategy, PathList}
 import xsbt.api.Discovery
 import xsbti.compile.CompileAnalysis
@@ -22,7 +22,6 @@ object FRCPluginJVM extends AutoPlugin() {
   }
 
   override lazy val projectSettings = Seq(
-    Keys.trackedFiles := Set(RoboRioJvm.codePath),
     Keys.robotClasses in Compile := (sbt.Keys.compile in Compile).map(findRobotClasses).value,
     Keys.robotClass := {
       val robotClasses = (Keys.robotClasses in Compile).value
@@ -34,12 +33,6 @@ object FRCPluginJVM extends AutoPlugin() {
       }
       robotClasses.head
     },
-    Keys.restartCode := RoboRioJvm.Runtime.restartRobotCodeTsk.value,
-    Keys.deploy := RoboRioJvm.deployCode.value,
-    Keys.robotConsole := RoboRioJvm.Runtime.viewRobotConsoleTsk.value,
-    Keys.restoreWorking := RoboRioJvm.Deployment.restoreRobotCodeVersionTsk.value,
-    Keys.markWorking := RoboRioJvm.Deployment.markRobotCodeVersionTsk.value,
-    Keys.cleanRobot := RoboRioJvm.Deployment.deleteRobotCodeTsk.value,
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.rename
       case PathList("reference.conf") =>
@@ -48,6 +41,17 @@ object FRCPluginJVM extends AutoPlugin() {
     },
     sbt.Keys.mainClass in assembly := Some("edu.wpi.first.wpilibj.RobotBase"),
     sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++
-      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value)))
+      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value))),
+
+    Keys.trackedFiles := Set(RoboRioJvm.codePath),
+    Keys.deploy := RoboRioJvm.deployCode.value,
+
+    Keys.markRobotCodeVersion := RoboRioJvm.Deployment.markRobotCodeVersionTsk.value,
+    Keys.restoreRobotCodeVersion := RoboRioJvm.Deployment.restoreRobotCodeVersionTsk.value,
+    Keys.deleteRobotCode := RoboRioJvm.Deployment.deleteRobotCodeTsk.value,
+
+    Keys.restartRobotCode := RoboRioJvm.Runtime.restartRobotCodeTsk.value,
+    Keys.rebootRoboRio := RoboRioJvm.Runtime.rebootRoboRioTsk.value,
+    Keys.viewRobotConsole := RoboRioJvm.Runtime.viewRobotConsoleTsk.value,
   )
 }

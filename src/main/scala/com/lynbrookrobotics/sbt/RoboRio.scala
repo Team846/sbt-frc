@@ -136,7 +136,7 @@ abstract class RoboRio(keys: SbtFrcKeys) {
         if (localHash != sha1(targetPath)) { // corruption check
           logger.err(s"local hash and target hash do not match")
         } else {
-          logger.success(s"sent file - hash: $localHash")
+          logger.success(s"sent file, hash: $localHash")
         }
 
       } else {

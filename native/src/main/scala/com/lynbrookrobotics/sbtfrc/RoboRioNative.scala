@@ -1,8 +1,8 @@
 package com.lynbrookrobotics.sbtfrc
 
 import com.lynbrookrobotics.sbt.RoboRio
-import sbt._
 import sbt.Keys._
+import sbt._
 
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
@@ -14,7 +14,13 @@ object RoboRioNative extends RoboRio(Keys) {
     implicit val logger = streams.value.log
 
     Deployment.sendFile((nativeLink in Compile).value, codePath)
-    client.exec(s"rm -f $home/FRCUserProgram; cp $codePath $home/FRCUserProgram; . /etc/profile.d/natinst-path.sh; chown lvuser $home/FRCUserProgram; setcap 'cap_sys_nice=pe' $home/FRCUserProgram; chmod a+x $home/FRCUserProgram").right.get
+    client.exec(s"rm -f $home/FRCUserProgram;" +
+      s"cp $codePath $home/FRCUserProgram;" +
+      s". /etc/profile.d/natinst-path.sh;" +
+      s"chown lvuser $home/FRCUserProgram;" +
+      s"setcap 'cap_sys_nice=pe' $home/FRCUserProgram;" +
+      s"chmod a+x $home/FRCUserProgram"
+    ).right.get
     Runtime.restartRobotCode
   }
 }

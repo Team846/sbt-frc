@@ -10,7 +10,8 @@ import sbt.{Def, _}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, Promise}
+import scala.util.{Failure, Success}
 
 abstract class RoboRio(keys: SbtFrcKeys) {
 
@@ -62,10 +63,29 @@ abstract class RoboRio(keys: SbtFrcKeys) {
     lazy val connectTsk: Def.Initialize[Task[SshClient]] = Def.task {
       implicit val logger = streams.value.log
 
+      val toTryList = addresses(keys.teamNumber.value)
+      var remainingThatMightWork = toTryList.size
+      val connectFutures = connect(toTryList)
+      val retPromise = Promise[SshClient]()
+
+      connectFutures.foreach { f =>
+        f.onComplete { r =>
+          if (!retPromise.isCompleted) {
+            r match {
+              case Success(client) =>
+                retPromise.success(client)
+              case Failure(ex) =>
+                remainingThatMightWork -= 1
+                if (remainingThatMightWork == 0) {
+                  retPromise.failure(new Exception("Could not connect to roboRIO"))
+                }
+            }
+          }
+        }
+      }
+
       Await.result(
-        connect(addresses(keys.teamNumber.value)).reduce((a, b) =>
-          a.fallbackTo(b)
-        ),
+        retPromise.future,
         Duration.Inf
       )
     }

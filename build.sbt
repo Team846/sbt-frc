@@ -4,7 +4,7 @@ organization in ThisBuild := "com.lynbrookrobotics"
 
 name := "sbt-frc"
 
-version in ThisBuild := "0.5.2"
+version in ThisBuild := "0.5.3"
 
 scalaVersion in ThisBuild  := "2.12.4"
 

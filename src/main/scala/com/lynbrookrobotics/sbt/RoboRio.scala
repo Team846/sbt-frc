@@ -70,15 +70,17 @@ abstract class RoboRio(keys: SbtFrcKeys) {
 
       connectFutures.foreach { f =>
         f.onComplete { r =>
-          if (!retPromise.isCompleted) {
-            r match {
-              case Success(client) =>
-                retPromise.success(client)
-              case Failure(ex) =>
-                remainingThatMightWork -= 1
-                if (remainingThatMightWork == 0) {
-                  retPromise.failure(new Exception("Could not connect to roboRIO"))
-                }
+          retPromise.synchronized {
+            if (!retPromise.isCompleted) {
+              r match {
+                case Success(client) =>
+                  retPromise.success(client)
+                case Failure(ex) =>
+                  remainingThatMightWork -= 1
+                  if (remainingThatMightWork == 0) {
+                    retPromise.failure(new Exception("Could not connect to roboRIO"))
+                  }
+              }
             }
           }
         }

@@ -3,12 +3,12 @@ package com.lynbrookrobotics.sbtfrc
 import sbt.Keys._
 import sbt.Package.ManifestAttributes
 import sbt._
-import sbtassembly.{MergeStrategy, PathList}
+import sbtassembly.{AssemblyKeys, AssemblyPlugin, MergeStrategy, PathList}
 import xsbt.api.Discovery
 import xsbti.compile.CompileAnalysis
 
 object FRCPluginJVM extends AutoPlugin {
-  override def requires = plugins.JvmPlugin && sbtassembly.AssemblyPlugin
+  override def requires = FRCPlugin && plugins.JvmPlugin && AssemblyPlugin
 
   val autoImport = JVMKeys
 
@@ -43,15 +43,14 @@ object FRCPluginJVM extends AutoPlugin {
     sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++
       Seq(ManifestAttributes(("Robot-Class", JVMKeys.robotClass.value))),
 
-    JVMKeys.trackedFiles := Set(RoboRioJvm.codePath),
-    JVMKeys.deploy := RoboRioJvm.deployCode.value,
+    CoreKeys.trackedFiles += s"${Deployment.home}/robot-code.jar",
+    CoreKeys.deployCode := Def.task {
+      implicit val client = Connection.connectTsk.value
+      implicit val logger = streams.value.log
 
-    JVMKeys.markRobotCodeVersion := RoboRioJvm.Deployment.markRobotCodeVersionTsk.value,
-    JVMKeys.restoreRobotCodeVersion := RoboRioJvm.Deployment.restoreRobotCodeVersionTsk.value,
-    JVMKeys.deleteRobotCode := RoboRioJvm.Deployment.deleteRobotCodeTsk.value,
-
-    JVMKeys.restartRobotCode := RoboRioJvm.Runtime.restartRobotCodeTsk.value,
-    JVMKeys.rebootRoboRio := RoboRioJvm.Runtime.rebootRoboRioTsk.value,
-    JVMKeys.viewRobotConsole := RoboRioJvm.Runtime.viewRobotConsoleTsk.value,
+      val code = AssemblyKeys.assembly.value
+      Deployment.sendFile(code, s"${Deployment.home}/robot-code.jar")
+      Runtime.restartRobotCode
+    }.value
   )
 }

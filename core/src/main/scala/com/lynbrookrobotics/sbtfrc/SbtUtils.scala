@@ -1,4 +1,4 @@
-package com.lynbrookrobotics.sbt
+package com.lynbrookrobotics.sbtfrc
 
 import java.io.File
 import java.nio.charset.StandardCharsets

@@ -1,22 +1,32 @@
 package com.lynbrookrobotics.sbtfrc
 
-import sbt.AutoPlugin
+import sbt._
+
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
 object FRCPluginNative extends AutoPlugin {
-  override def requires = scalanative.sbtplugin.ScalaNativePlugin
+  override def requires = FRCPlugin && scalanative.sbtplugin.ScalaNativePlugin
 
-  val autoImport = NativeKeys
+  object autoImport
+
+  import Deployment.home
+  val codePath = s"$home/robot-code"
 
   override lazy val projectSettings = Seq(
-    NativeKeys.trackedFiles := Set(RoboRioNative.codePath),
-    NativeKeys.deploy := RoboRioNative.deployCode.value,
+    CoreKeys.trackedFiles += codePath,
+    CoreKeys.deployCode := Def.task {
+      implicit val client = Connection.connectTsk.value
+      implicit val logger = Keys.streams.value.log
 
-    NativeKeys.markRobotCodeVersion := RoboRioNative.Deployment.markRobotCodeVersionTsk.value,
-    NativeKeys.restoreRobotCodeVersion := RoboRioNative.Deployment.restoreRobotCodeVersionTsk.value,
-    NativeKeys.deleteRobotCode := RoboRioNative.Deployment.deleteRobotCodeTsk.value,
-
-    NativeKeys.restartRobotCode := RoboRioNative.Runtime.restartRobotCodeTsk.value,
-    NativeKeys.rebootRoboRio := RoboRioNative.Runtime.rebootRoboRioTsk.value,
-    NativeKeys.viewRobotConsole := RoboRioNative.Runtime.viewRobotConsoleTsk.value,
+      Deployment.sendFile((nativeLink in Compile).value, codePath)
+      client.exec(s"rm -f $home/FRCUserProgram;" +
+        s"cp $codePath $home/FRCUserProgram;" +
+        s". /etc/profile.d/natinst-path.sh;" +
+        s"chown lvuser $home/FRCUserProgram;" +
+        s"setcap 'cap_sys_nice=pe' $home/FRCUserProgram;" +
+        s"chmod a+x $home/FRCUserProgram"
+      ).right.get
+      Runtime.restartRobotCode
+    }.value
   )
 }

@@ -1,11 +1,12 @@
-package com.lynbrookrobotics.sbt
+package com.lynbrookrobotics.sbtfrc
 
 import sbt._
 
-abstract class SbtFrcKeys {
+object CoreKeys {
   lazy val teamNumber = settingKey[Int]("FRC team number")
   lazy val trackedFiles = settingKey[Set[String]]("Files to keep working versions of")
 
+  lazy val deployCode = taskKey[Unit]("Deploy new robot code")
   lazy val deploy = taskKey[Unit]("Deploy new robot code")
 
   lazy val markRobotCodeVersion = taskKey[Unit]("Save the current trackedFiles for future restore")

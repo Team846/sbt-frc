@@ -1,14 +1,11 @@
 package com.lynbrookrobotics.sbtfrc
 
-import java.io.File
-
-import com.decodified.scalassh.SshClient
 import com.lynbrookrobotics.sbt.RoboRio
-import sbt.{Def, Logger}
+import sbt.Def
 import sbtassembly.AssemblyKeys
 import sbt.Keys._
 
-object RoboRioJvm extends RoboRio(Keys) {
+object RoboRioJvm extends RoboRio(JVMKeys) {
   val codePath = s"$home/robot-code.jar"
 
   override val deployCode = Def.task {

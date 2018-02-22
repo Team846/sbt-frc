@@ -7,10 +7,10 @@ import sbtassembly.{MergeStrategy, PathList}
 import xsbt.api.Discovery
 import xsbti.compile.CompileAnalysis
 
-object FRCPluginJVM extends AutoPlugin() {
+object FRCPluginJVM extends AutoPlugin {
   override def requires = plugins.JvmPlugin && sbtassembly.AssemblyPlugin
 
-  val autoImport = Keys
+  val autoImport = JVMKeys
 
   import sbtassembly.AssemblyKeys._
 
@@ -22,11 +22,11 @@ object FRCPluginJVM extends AutoPlugin() {
   }
 
   override lazy val projectSettings = Seq(
-    Keys.robotClasses in Compile := (sbt.Keys.compile in Compile).map(findRobotClasses).value,
-    Keys.robotClass := {
-      val robotClasses = (Keys.robotClasses in Compile).value
+    JVMKeys.robotClasses in Compile := (sbt.Keys.compile in Compile).map(findRobotClasses).value,
+    JVMKeys.robotClass := {
+      val robotClasses = (JVMKeys.robotClasses in Compile).value
       val logger = streams.value.log
-      if (robotClasses.length > 1) {
+      if (robotClasses.size > 1) {
         logger.warn(
           s"Multiple robot classes detected: ${robotClasses.mkString(", ")}"
         )
@@ -41,17 +41,17 @@ object FRCPluginJVM extends AutoPlugin() {
     },
     sbt.Keys.mainClass in assembly := Some("edu.wpi.first.wpilibj.RobotBase"),
     sbt.Keys.packageOptions in assembly := (sbt.Keys.packageOptions in assembly).value ++
-      Seq(ManifestAttributes(("Robot-Class", Keys.robotClass.value))),
+      Seq(ManifestAttributes(("Robot-Class", JVMKeys.robotClass.value))),
 
-    Keys.trackedFiles := Set(RoboRioJvm.codePath),
-    Keys.deploy := RoboRioJvm.deployCode.value,
+    JVMKeys.trackedFiles := Set(RoboRioJvm.codePath),
+    JVMKeys.deploy := RoboRioJvm.deployCode.value,
 
-    Keys.markRobotCodeVersion := RoboRioJvm.Deployment.markRobotCodeVersionTsk.value,
-    Keys.restoreRobotCodeVersion := RoboRioJvm.Deployment.restoreRobotCodeVersionTsk.value,
-    Keys.deleteRobotCode := RoboRioJvm.Deployment.deleteRobotCodeTsk.value,
+    JVMKeys.markRobotCodeVersion := RoboRioJvm.Deployment.markRobotCodeVersionTsk.value,
+    JVMKeys.restoreRobotCodeVersion := RoboRioJvm.Deployment.restoreRobotCodeVersionTsk.value,
+    JVMKeys.deleteRobotCode := RoboRioJvm.Deployment.deleteRobotCodeTsk.value,
 
-    Keys.restartRobotCode := RoboRioJvm.Runtime.restartRobotCodeTsk.value,
-    Keys.rebootRoboRio := RoboRioJvm.Runtime.rebootRoboRioTsk.value,
-    Keys.viewRobotConsole := RoboRioJvm.Runtime.viewRobotConsoleTsk.value,
+    JVMKeys.restartRobotCode := RoboRioJvm.Runtime.restartRobotCodeTsk.value,
+    JVMKeys.rebootRoboRio := RoboRioJvm.Runtime.rebootRoboRioTsk.value,
+    JVMKeys.viewRobotConsole := RoboRioJvm.Runtime.viewRobotConsoleTsk.value,
   )
 }

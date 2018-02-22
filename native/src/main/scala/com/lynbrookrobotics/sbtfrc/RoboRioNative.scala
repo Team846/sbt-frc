@@ -6,7 +6,7 @@ import sbt._
 
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
-object RoboRioNative extends RoboRio(Keys) {
+object RoboRioNative extends RoboRio(NativeKeys) {
   val codePath = s"$home/robot-code"
 
   override val deployCode = Def.task {
